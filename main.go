@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"reflect"
+	"runtime"
 )
 
 type HelloHandler struct{}
@@ -31,6 +33,14 @@ func register(w http.ResponseWriter, r *http.Request) {
 		panic("register err")
 	}
 	t.Execute(w, nil)
+}
+
+func log(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+		fmt.Println("Handler function called - " + name)
+		handler(w, r)
+	}
 }
 
 func success(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +73,7 @@ func main() {
 
 	http.HandleFunc("/home", home)
 
-	http.HandleFunc("/register", register)
+	http.HandleFunc("/register", log(register))
 	http.HandleFunc("/success", success)
 
 	fileHandler := http.FileServer(http.Dir("./static"))
